@@ -1,0 +1,141 @@
+source ~/.myzsh2.sh
+
+alias resh="source ~/.zshrc"
+alias csh="code ~/.myzsh"
+alias vsh="vim ~/.myzsh"
+
+########################################################################################################
+
+# JOURNAL
+
+journal() {
+    cd ~/Documents/Journal\ from\ 20240509
+    filename=$(date "+%Y%m%d").txt
+    if [ -f "$filename" ]; then
+        open "$filename"
+    else
+        touch "$filename" && open "$filename"
+    fi
+}
+
+alias j='journal'
+
+# alias j='cd ~/Documents/Journal\ from\ 20240509'
+# alias jnew="j && touch $(date '+%Y%m%d').txt && open $(date '+%Y%m%d').txt"
+# alias jadd="open $(date '+%Y%m%d').txt"
+
+########################################################################################################
+
+alias gstat='git status'
+alias gdif='git diff'
+alias gdiff='git diff'
+alias gpull='git pull'
+alias gpush='git push'
+alias gfn='git fetch &&'
+alias gco='git checkout'
+alias gcob='git checkout -b'
+alias grest='git restore --staged '
+alias grestall='git restore --staged .'
+
+########################################################################################################
+#### Current Code Project Aliases ######################################################################
+
+# alias cdx='cd ~/Development/code/project-juno'
+# alias cdc='cd ~/Development/code/project-juno/services/core'
+# alias cdbe='cd ~/Development/code/project-juno/services/core'
+# alias cdfe='cd ~/Development/code/project-juno/clients/frontend'
+
+# alias start='cd ~/Development/code/project-juno/ && docker-compose up --build'
+
+########################################################################################################
+
+#### PYTHON ####
+
+alias python="python3"
+alias pip="pip3"
+
+tc() {
+    if [ -z "$1" ]; then
+        echo "Usage: tc <filepath/filename.py>"
+        return 1
+    fi
+    touch "$1"
+    code "$1"
+}
+
+function pip-save() {
+    for pkg in $@; do
+        pip install "$pkg" && {
+            name="$(pip show "$pkg" | grep Name: | awk '{print $2}')";
+            version="$(pip show "$pkg" | grep Version: | awk '{print $2}')";
+            echo "${name}==${version}" >> requirements.txt;
+        }
+    done
+}
+
+########################################################################################################
+
+#### UBUNTU ####
+
+alias sshbgm='ssh benmiriello@192.168.1.77'
+alias cdbgm='ssh benmiriello@192.168.1.77'
+
+########################################################################################################
+
+#### CLAUDE ####
+
+# For inexplicable reasons I cannot make a shortcut to this
+# So here is the path to claude's config for which files it can access:
+# "/Users/benmiriello/Library/Application Support/Claude/claude_desktop_config.json"
+
+########################################################################################################
+
+#### Samba Connections to Debian PC via local network or tailnet ####
+
+## SETUP ##
+
+# On lnx: sudo apt install samba
+#         settings are in: /etc/samba/smb.conf
+#         sudo smbpasswd -a your_debian_user
+#         sudo systemctl restart smbd
+
+# On mac:
+#         mkdir -p ~/mnt/debian_home
+#         chmod 700 ~/mnt/debian_home
+#         Find launch agent at ~/Library/LaunchAgents/com.user.mountdebian.plist
+#         Wrapper script launch agent uses is at ~/bin/mount_debian_smb.sh
+
+mount_debian_local() {
+  mkdir -p ~/mnt/debian_home
+  mount_smbfs //benmiriello:testsmbpw@192.168.1.77/benmiriello ~/mnt/debian_home
+}
+
+mount_debian_tailnet() {
+  mkdir -p ~/mnt/debian_home
+  mount_smbfs //benmiriello@100.95.190.125/home ~/mnt/debian_home
+}
+mount_debian_local_or_tailnet() {
+  local MOUNT_POINT="$HOME/mnt/debian_home"
+  local LOCAL_IP="192.168.1.77"
+  local TAILNET_IP="100.95.190.125"
+  local DEBIAN_USER="benmiriello"
+  local SHARE_NAME="benmiriello"
+
+  mkdir -p "$MOUNT_POINT"
+
+  if ping -c 1 "$LOCAL_IP" >/dev/null 2>&1; then
+    echo "Mounting via local network..."
+    mount_smbfs //$DEBIAN_USER@$LOCAL_IP/$SHARE_NAME "$MOUNT_POINT"
+  else
+    echo "Mounting via tailnet..."
+    mount_smbfs //$DEBIAN_USER@$TAILNET_IP/$SHARE_NAME "$MOUNT_POINT"
+  fi
+}
+
+unmount_debian() {
+  umount ~/mnt/debian_home
+}
+
+# Aliases
+alias mdeb='mount_debian_local_or_tailnet'
+alias umdeb='unmount_debian'
